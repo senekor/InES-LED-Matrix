@@ -1,177 +1,209 @@
-// Gib deinen Code hier ein
 namespace NeoPixelMatrix {
     let strip: neopixel.Strip;
     let matrixWidth = 8;
     let matrixHeight = 8;
-    let defaultBrightness = 128;
-
+    let counter = 0;
+    let result: number[][] = [];
+    let binaryArray: number[] = [];
+    let finalResult: number[][] = [];
+    let output:number[][] = [];
+    let charData: number[] = [];
+    let charMatrix: number[][] = [];
+    let im:Image;
+    let textArray:number[][]=[];
+    let totalWidth :number = 0;
+    let index :number = 0 ; 
     //% block="initialize NeoPixel matrix with pin $pin and brightness $brightness"
     //% brightness.min=0 brightness.max=255
     export function initializeMatrix(pin: DigitalPin, brightness: number): void {
         strip = neopixel.create(pin, matrixWidth * matrixHeight, NeoPixelMode.RGB);
-        defaultBrightness = brightness;
+        let defaultBrightness = brightness;
         strip.setBrightness(brightness);
         clear();
+        serial.redirectToUSB();
+        serial.writeLine("Matrix init");
     }
 
     //% block="clear NeoPixel matrix"
     export function clear(): void {
-        strip.clear();
+        if (strip) {
+            strip.clear();
+            strip.show(); 
+        }
+    }
+    //% block="set Brightness $brightness"
+    export function setBrightness(brightness :number):void{
+        strip.setBrightness(brightness);
         strip.show();
     }
-
     //% block="set pixel at x $x y $y to color $color"
     //% x.min=0 x.max=7 y.min=0 y.max=7
     //% color.shadow="colorNumberPicker"
     export function setPixel(x: number, y: number, color: number): void {
-        if (x >= 0 && x < matrixWidth && y >= 0 && y < matrixHeight) {
-            let index = (matrixHeight - 1 - y) * matrixWidth + x;
-            strip.setPixelColor(index, color);
-            strip.show();
+        if (strip) {
+            if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+                index = (matrixHeight -1 -y) * matrixWidth + x;//(y)* 8 + x;
+                strip.setPixelColor(index, color);
+            }
         }
     }
-
     //% block="scroll text $text with color $color and delay $delay ms"
     //% color.shadow="colorNumberPicker"
     export function scrollText(text: string, color: number, delay: number): void {
-        let textArray = getTextArray(text);
-        let totalWidth = textArray[0].length;
-
+        textArray = getTextArray(text);
+        totalWidth = textArray[0].length;
+        //serial.writeLine("beginning Scrolling")
         for (let offset = 0; offset < totalWidth; offset++) {
-            clear();
-            for (let x = 0; x < matrixWidth; x++) {
-                for (let y = 0; y < matrixHeight; y++) {
-                    if (textArray[y][x + offset] == 1) {
-                        setPixel(x, y, color);
-                    }
+            for (let x = 0; x < 8; x++) {
+                for (let y = 0; y < 8; y++) {
+                    if (x + offset >= totalWidth) continue;
+                    const PixelOn = textArray[y][x+offset] == 1;
+                    setPixel(x, y, PixelOn ? color : 0);
                 }
             }
+            strip.show();
             basic.pause(delay);
         }
+        textArray = [];
+        serial.writeLine("Text Scroll Completed");
     }
 
     function getTextArray(text: string): number[][] {
-        // Simple 6x6 font, expanded to include the entire alphabet.
+        // Simple 6x6 font
         const font: { [char: string]: number[] } = {
-            'A': [0b001100, 0b010010, 0b100001, 0b111111, 0b100001, 0b100001],
-            'B': [0b111110, 0b100001, 0b111110, 0b100001, 0b100001, 0b111110],
-            'C': [0b011110, 0b100001, 0b100000, 0b100000, 0b100001, 0b011110],
-            'D': [0b111100, 0b100010, 0b100001, 0b100001, 0b100010, 0b111100],
-            'E': [0b111111, 0b100000, 0b111110, 0b100000, 0b100000, 0b111111],
-            'F': [0b111111, 0b100000, 0b111110, 0b100000, 0b100000, 0b100000],
-            'G': [0b011110, 0b100001, 0b100000, 0b101111, 0b100001, 0b011110],
-            'H': [0b100001, 0b100001, 0b111111, 0b100001, 0b100001, 0b100001],
-            'I': [0b111110, 0b001100, 0b001100, 0b001100, 0b001100, 0b111110],
-            'J': [0b000111, 0b000010, 0b000010, 0b100010, 0b100010, 0b011100],
-            'K': [0b100001, 0b100010, 0b111100, 0b100010, 0b100001, 0b100001],
-            'L': [0b100000, 0b100000, 0b100000, 0b100000, 0b100000, 0b111110],
-            'M': [0b100001, 0b110011, 0b101101, 0b100001, 0b100001, 0b100001],
-            'N': [0b100001, 0b110001, 0b101001, 0b100101, 0b100011, 0b100001],
-            'O': [0b011110, 0b100001, 0b100001, 0b100001, 0b100001, 0b011110],
-            'P': [0b111110, 0b100001, 0b111110, 0b100000, 0b100000, 0b100000],
-            'Q': [0b011110, 0b100001, 0b100001, 0b100101, 0b100011, 0b011101],
-            'R': [0b111110, 0b100001, 0b111110, 0b100010, 0b100001, 0b100001],
-            'S': [0b011111, 0b100000, 0b011110, 0b000001, 0b000001, 0b111110],
-            'T': [0b111111, 0b001100, 0b001100, 0b001100, 0b001100, 0b001100],
-            'U': [0b100001, 0b100001, 0b100001, 0b100001, 0b100001, 0b011110],
-            'V': [0b100001, 0b100001, 0b100001, 0b010010, 0b010010, 0b001100],
-            'W': [0b100001, 0b100001, 0b100001, 0b101101, 0b110011, 0b100001],
-            'X': [0b100001, 0b010010, 0b001100, 0b001100, 0b010010, 0b100001],
-            'Y': [0b100001, 0b010010, 0b001100, 0b001100, 0b001100, 0b001100],
-            'Z': [0b111111, 0b000011, 0b000110, 0b001100, 0b011000, 0b111111],
-            'a': [0b000000, 0b011100, 0b100010, 0b100010, 0b100010, 0b011110],
-            'b': [0b100000, 0b100000, 0b111110, 0b100001, 0b100001, 0b111110],
-            'c': [0b000000, 0b011110, 0b100000, 0b100000, 0b100000, 0b011110],
-            'd': [0b000001, 0b000001, 0b011111, 0b100001, 0b100001, 0b011111],
-            'e': [0b000000, 0b011110, 0b100001, 0b111111, 0b100000, 0b011110],
-            'f': [0b001100, 0b010010, 0b010000, 0b111100, 0b010000, 0b111100],
-            'g': [0b000000, 0b011110, 0b100001, 0b011111, 0b000001, 0b111110],
-            'h': [0b100000, 0b100000, 0b111110, 0b100001, 0b100001, 0b100001],
-            'i': [0b001100, 0b000000, 0b001100, 0b001100, 0b001100, 0b001100],
-            'j': [0b000110, 0b000000, 0b000110, 0b000110, 0b100110, 0b011100],
-            'k': [0b100000, 0b100010, 0b101100, 0b110001, 0b101010, 0b100010],
-            'l': [0b001100, 0b001100, 0b001100, 0b001100, 0b001100, 0b001100],
-            'm': [0b000000, 0b110101, 0b101010, 0b101010, 0b101010, 0b101010],
-            'n': [0b000000, 0b111100, 0b100010, 0b100010, 0b100010, 0b100010],
-            'o': [0b000000, 0b011110, 0b100001, 0b100001, 0b100001, 0b011110],
-            'p': [0b000000, 0b111100, 0b100010, 0b111100, 0b100000, 0b100000],
-            'q': [0b000000, 0b011111, 0b100001, 0b011111, 0b000001, 0b000001],
-            'r': [0b000000, 0b101110, 0b110001, 0b100000, 0b100000, 0b100000],
-            's': [0b000000, 0b011110, 0b100000, 0b011100, 0b000010, 0b111100],
-            't': [0b010000, 0b111100, 0b010000, 0b010000, 0b010010, 0b001100],
-            'u': [0b000000, 0b100001, 0b100001, 0b100001, 0b100101, 0b011110],
-            'v': [0b000000, 0b100001, 0b100001, 0b010010, 0b001100, 0b000000],
-            'w': [0b000000, 0b101010, 0b101010, 0b101010, 0b101010, 0b010100],
-            'x': [0b000000, 0b100001, 0b010010, 0b001100, 0b010010, 0b100001],
-            'y': [0b000000, 0b100001, 0b100001, 0b011110, 0b000001, 0b111110],
-            'z': [0b000000, 0b111110, 0b000100, 0b001000, 0b010000, 0b111110]
-        };
-
-        let result: number[][] = [];
-
-        for (let char of text) {
-            if (font[char]) {
-                let charData = font[char];
-                let charMatrix = [];
-
+            'A': [0b00000000, 0b00011000, 0b00100100, 0b01000010, 0b01111110, 0b01000010, 0b01000010, 0b00000000],
+            'B': [0b00000000, 0b01111000, 0b01000100, 0b01111000, 0b01000100, 0b01000100, 0b01111000, 0b00000000],
+            'C': [0b00000000, 0b00111100, 0b01000010, 0b01000000, 0b01000000, 0b01000010, 0b00111100, 0b00000000],
+            'D': [0b00000000, 0b01111000, 0b01000100, 0b01000010, 0b01000010, 0b01000100, 0b01111000, 0b00000000],
+            'E': [0b00000000, 0b01111110, 0b01000000, 0b01111000, 0b01000000, 0b01000000, 0b01111110, 0b00000000],
+            'F': [0b00000000, 0b01111110, 0b01000000, 0b01111000, 0b01000000, 0b01000000, 0b01000000, 0b00000000],
+            'G': [0b00000000, 0b00111100, 0b01000010, 0b01000000, 0b01001110, 0b01000010, 0b00111100, 0b00000000],
+            'H': [0b00000000, 0b01000010, 0b01000010, 0b01111110, 0b01000010, 0b01000010, 0b01000010, 0b00000000],
+            'I': [0b00000000, 0b00111100, 0b00011000, 0b00011000, 0b00011000, 0b00011000, 0b00111100, 0b00000000],
+            'J': [0b00000000, 0b00011110, 0b00000100, 0b00000100, 0b00000100, 0b01000100, 0b00111000, 0b00000000],
+            'K': [0b00000000, 0b01000010, 0b01000100, 0b01001000, 0b01110000, 0b01001000, 0b01000100, 0b00000000],
+            'L': [0b00000000, 0b01000000, 0b01000000, 0b01000000, 0b01000000, 0b01000000, 0b01111110, 0b00000000],
+            'M': [0b00000000, 0b01000010, 0b01100110, 0b01011010, 0b01000010, 0b01000010, 0b01000010, 0b00000000],
+            'N': [0b00000000, 0b01000010, 0b01100010, 0b01010010, 0b01001010, 0b01000110, 0b01000010, 0b00000000],
+            'O': [0b00000000, 0b00111100, 0b01000010, 0b01000010, 0b01000010, 0b01000010, 0b00111100, 0b00000000],
+            'P': [0b00000000, 0b01111000, 0b01000100, 0b01000100, 0b01111000, 0b01000000, 0b01000000, 0b00000000],
+            'Q': [0b00000000, 0b00111100, 0b01000010, 0b01000010, 0b01001010, 0b01000100, 0b00111010, 0b00000000],
+            'R': [0b00000000, 0b01111000, 0b01000100, 0b01000100, 0b01111000, 0b01001000, 0b01000100, 0b00000000],
+            'S': [0b00000000, 0b00111100, 0b01000010, 0b00110000, 0b00001100, 0b01000010, 0b00111100, 0b00000000],
+            'T': [0b00000000, 0b01111110, 0b00011000, 0b00011000, 0b00011000, 0b00011000, 0b00011000, 0b00000000],
+            'U': [0b00000000, 0b01000010, 0b01000010, 0b01000010, 0b01000010, 0b01000010, 0b00111100, 0b00000000],
+            'V': [0b00000000, 0b01000010, 0b01000010, 0b01000010, 0b00100100, 0b00100100, 0b00011000, 0b00000000],
+            'W': [0b00000000, 0b01000010, 0b01000010, 0b01000010, 0b01011010, 0b01100110, 0b01000010, 0b00000000],
+            'X': [0b00000000, 0b01000010, 0b00100100, 0b00011000, 0b00011000, 0b00100100, 0b01000010, 0b00000000],
+            'Y': [0b00000000, 0b01000010, 0b00100100, 0b00011000, 0b00011000, 0b00011000, 0b00011000, 0b00000000],
+            'Z': [0b00000000, 0b01111110, 0b00000100, 0b00001000, 0b00010000, 0b00100000, 0b01111110, 0b00000000],
+            ' ': [0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000],
+            /*
+            'a': [0b00000000, 0b00000000, 0b00111100, 0b00000010, 0b00111110, 0b01000010, 0b00111110, 0b00000000],
+            'b': [0b00000000, 0b01000000, 0b01000000, 0b01111100, 0b01000010, 0b01000010, 0b01111100, 0b00000000],
+            'c': [0b00000000, 0b00000000, 0b00111100, 0b01000000, 0b01000000, 0b01000010, 0b00111100, 0b00000000],
+            'd': [0b00000000, 0b00000010, 0b00000010, 0b00111110, 0b01000010, 0b01000010, 0b00111110, 0b00000000],
+            'e': [0b00000000, 0b00000000, 0b00111100, 0b01000010, 0b01111110, 0b01000000, 0b00111100, 0b00000000],
+            'f': [0b00000000, 0b00001100, 0b00010010, 0b00010000, 0b01111100, 0b00010000, 0b00010000, 0b00000000],
+            'g': [0b00000000, 0b00000000, 0b00111110, 0b01000010, 0b00111110, 0b00000010, 0b01111100, 0b00000000],
+            'h': [0b00000000, 0b01000000, 0b01000000, 0b01111100, 0b01000010, 0b01000010, 0b01000010, 0b00000000],
+            'i': [0b00000000, 0b00000000, 0b00011000, 0b00000000, 0b00111000, 0b00001000, 0b00111100, 0b00000000],
+            'j': [0b00000000, 0b00000000, 0b00001100, 0b00000000, 0b00011100, 0b00000100, 0b00111100, 0b00000000],
+            'k': [0b00000000, 0b01000000, 0b01000010, 0b01000100, 0b01111000, 0b01000100, 0b01000010, 0b00000000],
+            'l': [0b00000000, 0b00110000, 0b00001000, 0b00001000, 0b00001000, 0b00001000, 0b00111100, 0b00000000],
+            'm': [0b00000000, 0b00000000, 0b01100100, 0b01011010, 0b01000010, 0b01000010, 0b01000010, 0b00000000],
+            'n': [0b00000000, 0b00000000, 0b01111000, 0b01000100, 0b01000100, 0b01000100, 0b01000100, 0b00000000],
+            'o': [0b00000000, 0b00000000, 0b00111100, 0b01000010, 0b01000010, 0b01000010, 0b00111100, 0b00000000],
+            'p': [0b00000000, 0b00000000, 0b01111100, 0b01000010, 0b01111100, 0b01000000, 0b01000000, 0b00000000],
+            'q': [0b00000000, 0b00000000, 0b00111110, 0b01000010, 0b00111110, 0b00000010, 0b00000010, 0b00000000],
+            'r': [0b00000000, 0b00000000, 0b01011100, 0b01100010, 0b01000000, 0b01000000, 0b01000000, 0b00000000],
+            's': [0b00000000, 0b00000000, 0b00111110, 0b01000000, 0b00111100, 0b00000010, 0b01111100, 0b00000000],
+            't': [0b00000000, 0b00000000, 0b00010000, 0b01111100, 0b00010000, 0b00010010, 0b00001100, 0b00000000],
+            'u': [0b00000000, 0b00000000, 0b01000010, 0b01000010, 0b01000010, 0b01000110, 0b00111010, 0b00000000],
+            'v': [0b00000000, 0b00000000, 0b01000010, 0b01000010, 0b00100100, 0b00100100, 0b00011000, 0b00000000],
+            'w': [0b00000000, 0b00000000, 0b01000010, 0b01000010, 0b01011010, 0b01100110, 0b01000010, 0b00000000],
+            'x': [0b00000000, 0b00000000, 0b01000010, 0b00100100, 0b00011000, 0b00100100, 0b01000010, 0b00000000],
+            'y': [0b00000000, 0b00000000, 0b01000010, 0b01000010, 0b00111110, 0b00000010, 0b00111100, 0b00000000],
+            'z': [0b00000000, 0b00000000, 0b01111110, 0b00000100, 0b00001000, 0b00100000, 0b01111110, 0b00000000],*/
+        }
+        result = [];
+        binaryArray = [];
+        finalResult = [];
+        output = [];
+        charData = [];
+        charMatrix = [];
+        counter += 1;
+        serial.writeLine("Number of Executions: " + counter);
+        //create binary array of each 
+        for (let i = 0; i < text.length; i++){
+            if (font[text[i]]) {
+                try{
+                    charData = font[text[i]];
+                }catch{
+                    serial.writeLine("Error getting char Data");
+                }
+                
                 for (let row of charData) {
-                    let binaryArray = [];
-                    for (let bit = 5; bit >= 0; bit--) {
-                        binaryArray.push((row >> bit) & 1);
+                    for (let bit = 7; bit >= 0; bit--) {
+                        try {
+                            binaryArray.push((row >> bit) & 1);                        
+                        }catch{
+                            serial.writeLine("Error transforming Array");
+                        }
                     }
-                    charMatrix.push(binaryArray);
-                }
-
-                // Transpose the character matrix
-                for (let x = 0; x < 6; x++) {
-                    let column = [];
-                    for (let y = 0; y < 6; y++) {
-                        column.push(charMatrix[y][x]);
+                    try{
+                        charMatrix.push(binaryArray);
+                        binaryArray = [];
+                    }catch{
+                        serial.writeLine("Error pushing binary Array");
                     }
-                    result.push(column);
                 }
-
-                // Add a column of zeros as spacing between characters
-                result.push([0, 0, 0, 0, 0, 0]);
-            }
-        }
-
-        // Ensure the array is 8 rows tall and centered vertically
-        let centeredResult: number[][] = [];
-        for (let x = 0; x < result.length; x++) {
-            let column = [];
-            for (let y = 0; y < 8; y++) {
-                if (y < 1 || y > 6) {
-                    column.push(0);
-                } else {
-                    column.push(result[x][y - 1] || 0);
+                serial.writeLine("pushed binary")
+                try {
+                    output = charMatrix[0].map((_,colIndex) => charMatrix.map(row => row[colIndex]));
+                    charMatrix = [];
+                }catch(err){
+                    serial.writeLine("Error transposing character matrix");    
                 }
+                try {
+                    result = result.concat(output);
+                }catch {
+                    serial.writeLine("failed to push char array");
+                }
+                serial.writeLine("pusehd zeros");
             }
-            centeredResult.push(column);
         }
-
-        // Transpose the centeredResult to match matrix display orientation
-        let finalResult: number[][] = [];
-        for (let y = 0; y < 8; y++) {
-            let row = [];
-            for (let x = 0; x < centeredResult.length; x++) {
-                row.push(centeredResult[x][y]);
-            }
-            finalResult.push(row);
+        serial.writeLine("Centering Result");
+        try{
+            finalResult = result[0].map((_, columnIndex) => result.map(rows => rows[columnIndex]));
+        }catch(err){
+            serial.writeLine("Error transposing final matrix")
         }
-
+        
+        serial.writeLine("final Matrix: ");
         return finalResult;
     }
     //% block="show image on NeoPixel matrix $image with color $color"
     //% color.shadow="colorNumberPicker"
     export function showImage(image: Image, color: number): void {
-        for (let x = 0; x < matrixWidth; x++) {
-            for (let y = 0; y < matrixHeight; y++) {
+        try{
+            let imagewidth = image.width();
+            let imageheight = image.height();
+
+        for (let x = 0; x < imagewidth; x++) {
+            //serial.writeLine("generating matrix 1");
+            for (let y = 0; y < imageheight; y++) {
+                //serial.writeLine("generating matrix 0");
                 if (image.pixel(x, y)) {
                     setPixel(x, y, color);
                 }
             }
         }
+        }catch{
+            serial.writeLine("Error creating image matrix");
+        }
+        strip.show();
+        im = <Image><any>'';
     }
     /**
      */
@@ -182,9 +214,11 @@ namespace NeoPixelMatrix {
     //% shim=images::createImage
     //% weight=90
     export function matrix8x8(i: string): Image {
-        const im = <Image><any>i;
+        im = <Image><any>i;
         return im
     }
 
-}
+    }
+
+
 
