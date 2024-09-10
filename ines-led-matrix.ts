@@ -69,7 +69,7 @@ namespace NeoPixelMatrix {
     }
 
     function getTextArray(text: string): number[][] {
-        // Simple 6x6 font
+        // Simple 8x8 font
         const font: { [char: string]: number[] } = {
             'A': [0b00000000, 0b00011000, 0b00100100, 0b01000010, 0b01111110, 0b01000010, 0b01000010, 0b00000000],
             'B': [0b00000000, 0b01111000, 0b01000100, 0b01111000, 0b01000100, 0b01000100, 0b01111000, 0b00000000],

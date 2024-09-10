@@ -1,5 +1,6 @@
 NeoPixelMatrix.initializeMatrix(DigitalPin.P0, 154)
 basic.forever(function () {
+    NeoPixelMatrix.scrollText("A", 0xff0000, 0)
     NeoPixelMatrix.clear()
     NeoPixelMatrix.showImage(NeoPixelMatrix.matrix8x8(`
         . . . . . . . .
