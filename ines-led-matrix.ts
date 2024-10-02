@@ -13,6 +13,7 @@ namespace NeoPixelMatrix {
     let textArray: number[][] = [];
     let totalWidth: number = 0;
     let index: number = 0;
+    let debugEnabled: boolean = false;
 
     // Simple 8x8 font
     let textFont: { [char: string]: number[] } = {
@@ -73,6 +74,18 @@ namespace NeoPixelMatrix {
         'z': [0b00000000, 0b00000000, 0b01111110, 0b00000100, 0b00001000, 0b00100000, 0b01111110, 0b00000000],
     };
 
+    //% block="set serial debugging prints to $enable"
+    //% enable.shadow="toggleOnOff"
+    export function debugEnable(enable: boolean): void {
+        debugEnabled = enable;
+    }
+
+    function serialDebugMsg(message: string): void {
+        if (debugEnabled) {
+            serial.writeLine(message);
+        }
+    }
+
     //% block="initialize NeoPixel matrix with pin $pin and brightness $brightness"
     //% brightness.min=0 brightness.max=255
     export function initializeMatrix(pin: DigitalPin, brightness: number): void {
@@ -81,7 +94,7 @@ namespace NeoPixelMatrix {
         strip.setBrightness(brightness);
         clear();
         serial.redirectToUSB();
-        serial.writeLine(`initializeMatrix: Matrix init: Pin = ${pin}, Brightness = ${brightness}`);
+        serialDebugMsg(`initializeMatrix: Matrix init: Pin = ${pin}, Brightness = ${brightness}`);
     }
 
     //% block="clear NeoPixel matrix"
@@ -96,7 +109,7 @@ namespace NeoPixelMatrix {
     export function setBrightness(brightness: number): void {
         strip.setBrightness(brightness);
         strip.show();
-        serial.writeLine(`setBrightness: Brightness is set to = ${brightness}`);
+        serialDebugMsg(`setBrightness: Brightness is set to = ${brightness}`);
     }
 
     //% block="set pixel at x $x y $y to color $color"
@@ -116,7 +129,7 @@ namespace NeoPixelMatrix {
     export function scrollText(text: string, color: number, delay: number): void {
         textArray = getTextArray(text);
         totalWidth = textArray[0].length;
-        //serial.writeLine("beginning Scrolling")
+        serialDebugMsg("\nscrollText: beginning Scrolling text: " + text);
         for (let offset = 0; offset < totalWidth; offset++) {
             for (let x = 0; x < 8; x++) {
                 for (let y = 0; y < 8; y++) {
@@ -129,7 +142,7 @@ namespace NeoPixelMatrix {
             basic.pause(delay);
         }
         textArray = [];
-        serial.writeLine("scrollText: Scroll Text Completed\n\n");
+        serialDebugMsg("scrollText: Scroll Text Completed\n");
     }
 
     function getTextArray(text: string): number[][] {
@@ -141,7 +154,7 @@ namespace NeoPixelMatrix {
         charData = [];
         charMatrix = [];
         counter += 1;
-        serial.writeLine("getTextArray: Number of Executions: " + counter);
+        //serialDebugMsg("getTextArray: Number of Executions: " + counter);
 
         //create binary array of each 
         for (let i = 0; i < text.length; i++) {
@@ -149,7 +162,7 @@ namespace NeoPixelMatrix {
                 try {
                     charData = textFont[text[i]];
                 } catch {
-                    serial.writeLine("getTextArray: Error getting char Data");
+                    serialDebugMsg("getTextArray: Error getting char Data");
                 }
 
                 for (let row of charData) {
@@ -157,36 +170,36 @@ namespace NeoPixelMatrix {
                         try {
                             binaryArray.push((row >> bit) & 1);
                         } catch {
-                            serial.writeLine("getTextArray: Error transforming Array");
+                            serialDebugMsg("getTextArray: Error transforming Array");
                         }
                     }
                     try {
                         charMatrix.push(binaryArray);
                         binaryArray = [];
                     } catch {
-                        serial.writeLine("getTextArray: Error pushing binary Array");
+                        serialDebugMsg("getTextArray: Error pushing binary Array");
                     }
                 }
-                serial.writeLine("getTextArray: pushed binary")
+                //serialDebugMsg("getTextArray: pushed binary")
                 try {
                     output = charMatrix[0].map((_, colIndex) => charMatrix.map(row => row[colIndex]));
                     charMatrix = [];
                 } catch (err) {
-                    serial.writeLine("getTextArray: Error transposing character matrix");
+                    serialDebugMsg("getTextArray: Error transposing character matrix");
                 }
                 try {
                     result = result.concat(output);
                 } catch {
-                    serial.writeLine("getTextArray: failed to push char array");
+                    serialDebugMsg("getTextArray: failed to push char array");
                 }
-                serial.writeLine("getTextArray: pushed zeros");
+                //serialDebugMsg("getTextArray: pushed zeros");
             }
         }
-        serial.writeLine("getTextArray: Centering Result");
+        //serialDebugMsg("getTextArray: Centering Result");
         try {
             finalResult = result[0].map((_, columnIndex) => result.map(rows => rows[columnIndex]));
         } catch (err) {
-            serial.writeLine("getTextArray: Error transposing final matrix")
+            serialDebugMsg("getTextArray: Error transposing final matrix")
         }
 
         // Clear arrays to free memory (garbage collector can reclaim memory)
@@ -196,7 +209,7 @@ namespace NeoPixelMatrix {
         charData = null;
         charMatrix = null;
 
-        serial.writeLine("getTextArray: Successfully created text array");
+        //serialDebugMsg("getTextArray: Successfully created text array");
         return finalResult;
     }
     //% block="show image on NeoPixel matrix $image with color $color"
@@ -207,16 +220,16 @@ namespace NeoPixelMatrix {
             let imageheight = image.height();
 
             for (let x = 0; x < imagewidth; x++) {
-                //serial.writeLine("generating matrix 1");
+                //serialDebugMsg("generating matrix 1");
                 for (let y = 0; y < imageheight; y++) {
-                    //serial.writeLine("generating matrix 0");
+                    //serialDebugMsg("generating matrix 0");
                     if (image.pixel(x, y)) {
                         setPixel(x, y, color);
                     }
                 }
             }
         } catch {
-            serial.writeLine("showImage: Error creating image matrix");
+            serialDebugMsg("showImage: Error creating image matrix");
         }
         strip.show();
         im = <Image><any>'';
