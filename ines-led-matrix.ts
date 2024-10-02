@@ -1,7 +1,7 @@
 namespace NeoPixelMatrix {
     let strip: neopixel.Strip;
-    let matrixWidth = 8;
-    let matrixHeight = 8;
+    let matrixWidth = 8; // x
+    let matrixHeight = 8; // y
     let counter = 0;
     let result: number[][] = [];
     let binaryArray: number[] = [];
@@ -14,6 +14,14 @@ namespace NeoPixelMatrix {
     let totalWidth: number = 0;
     let index: number = 0;
     let debugEnabled: boolean = false;
+    let startTime = control.millis();
+
+    enum Direction {
+        //% block="right"
+        Right = 0,
+        //% block="left"
+        Left = 1
+    }
 
     // Simple 8x8 font
     let textFont: { [char: string]: number[] } = {
@@ -117,10 +125,95 @@ namespace NeoPixelMatrix {
     //% color.shadow="colorNumberPicker"
     export function setPixel(x: number, y: number, color: number): void {
         if (strip) {
-            if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+            if (x >= 0 && x < matrixWidth && y >= 0 && y < matrixHeight) {
                 index = (matrixHeight - 1 - y) * matrixWidth + x;//(y)* 8 + x;
                 strip.setPixelColor(index, color);
             }
+        }
+    }
+
+    /**
+     */
+    //% block="Bild8x8"
+    //% imageLiteral=1
+    //% imageLiteralColumns=8
+    //% imageLiteralRows=8
+    //% shim=images::createImage
+    //% weight=90
+    export function matrix8x8(i: string): Image {
+        im = <Image><any>i;
+        return im
+    }
+
+    //% block="show image on NeoPixel matrix $image with color $color"
+    //% color.shadow="colorNumberPicker"
+    export function showImage(image: Image, color: number): void {
+        try {
+            let imagewidth = image.width();
+            let imageheight = image.height();
+
+            for (let x = 0; x < imagewidth; x++) {
+                //serialDebugMsg("generating matrix 1");
+                for (let y = 0; y < imageheight; y++) {
+                    //serialDebugMsg("generating matrix 0");
+                    if (image.pixel(x, y)) {
+                        setPixel(x, y, color);
+                    }
+                }
+            }
+        } catch {
+            serialDebugMsg("showImage: Error creating image matrix");
+        }
+        strip.show();
+        im = <Image><any>'';
+    }
+
+    //% block="show moving image on NeoPixel matrix $image with color $color and speed $speed in direction $direction"
+    //% color.shadow="colorNumberPicker"
+    //% speed.defl=100 speed.min=1 speed.max=1000
+    //% direction.defl=Direction.Right
+    export function movingImage(image: Image, color: number, speed: number, direction: Direction): void {
+        // Due to a bug the block is always generated with speed of 0. In this case we set it to 100ms.
+        if (speed < 1) {
+            speed = 100; // 100ms
+        }
+
+        try {
+            let imagewidth = image.width();
+            let imageheight = image.height();
+
+            serialDebugMsg("imagewidth = " + imagewidth + "imageheight = " + imageheight);
+            serialDebugMsg("matrixWidth = " + matrixWidth + "matrixHeight = " + matrixHeight);
+            serialDebugMsg("direction = " + direction);
+            serialDebugMsg("speed = " + speed);
+
+            if (direction === Direction.Left) {
+                for (let offset = -matrixWidth; offset <= matrixWidth; offset++) {
+                    for (let x = 0; x < matrixWidth; x++) {
+                        for (let y = 0; y < matrixHeight; y++) {
+                            const PixelOn = image.pixel(x + offset, y);
+                            //serialDebugMsg(`Pixel at (${x + offset}, ${y}) is ${PixelOn ? "on" : "off"}`);
+                            setPixel(x, y, PixelOn ? color : 0);
+                        }
+                    }
+                    strip.show();
+                    basic.pause(speed);
+                }
+            } else if (direction === Direction.Right) {
+                for (let offset = matrixWidth; offset >= -matrixWidth; offset--) {
+                    for (let x = 0; x < matrixWidth; x++) {
+                        for (let y = 0; y < matrixHeight; y++) {;
+                            const PixelOn = image.pixel(x + offset, y);
+                            //serialDebugMsg(`Pixel at (${x + offset}, ${y}) is ${PixelOn ? "on" : "off"}`);
+                            setPixel(x, y, PixelOn ? color : 0);
+                        }
+                    }
+                    strip.show();
+                    basic.pause(speed);
+                }
+            }
+        } catch {
+            serialDebugMsg("movingImage: Error displaying moving image");
         }
     }
 
@@ -130,9 +223,9 @@ namespace NeoPixelMatrix {
         textArray = getTextArray(text);
         totalWidth = textArray[0].length;
         serialDebugMsg("\nscrollText: beginning Scrolling text: " + text);
-        for (let offset = 0; offset < totalWidth; offset++) {
-            for (let x = 0; x < 8; x++) {
-                for (let y = 0; y < 8; y++) {
+        for (let offset = 0; offset < totalWidth; offset++) { // Scrolls text to the left
+            for (let x = 0; x < matrixWidth; x++) {
+                for (let y = 0; y < matrixHeight; y++) {
                     if (x + offset >= totalWidth) continue;
                     const PixelOn = textArray[y][x + offset] == 1;
                     setPixel(x, y, PixelOn ? color : 0);
@@ -166,7 +259,7 @@ namespace NeoPixelMatrix {
                 }
 
                 for (let row of charData) {
-                    for (let bit = 7; bit >= 0; bit--) {
+                    for (let bit = matrixWidth - 1; bit >= 0; bit--) {
                         try {
                             binaryArray.push((row >> bit) & 1);
                         } catch {
@@ -212,39 +305,13 @@ namespace NeoPixelMatrix {
         //serialDebugMsg("getTextArray: Successfully created text array");
         return finalResult;
     }
-    //% block="show image on NeoPixel matrix $image with color $color"
-    //% color.shadow="colorNumberPicker"
-    export function showImage(image: Image, color: number): void {
-        try {
-            let imagewidth = image.width();
-            let imageheight = image.height();
 
-            for (let x = 0; x < imagewidth; x++) {
-                //serialDebugMsg("generating matrix 1");
-                for (let y = 0; y < imageheight; y++) {
-                    //serialDebugMsg("generating matrix 0");
-                    if (image.pixel(x, y)) {
-                        setPixel(x, y, color);
-                    }
-                }
-            }
-        } catch {
-            serialDebugMsg("showImage: Error creating image matrix");
-        }
-        strip.show();
-        im = <Image><any>'';
+    function getCurrentTime(): string {
+        const elapsedMillis = control.millis() - startTime;
+        const totalSeconds = Math.floor(elapsedMillis / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return `${hours}:${minutes}:${seconds}`;
     }
-    /**
-     */
-    //% block="Bild8x8"
-    //% imageLiteral=1
-    //% imageLiteralColumns=8
-    //% imageLiteralRows=8
-    //% shim=images::createImage
-    //% weight=90
-    export function matrix8x8(i: string): Image {
-        im = <Image><any>i;
-        return im
-    }
-
 }
