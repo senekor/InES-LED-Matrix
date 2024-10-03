@@ -1,8 +1,42 @@
 namespace NeoPixelMatrix {
+    // ENUMS
+    enum Direction {
+        //% block="right"
+        Right = 0,
+        //% block="left"
+        Left = 1
+    }
+
+    enum JoystickDirection {
+        //% block="notPressed"
+        NotPressed = 0,
+        //% block="center"
+        Center = 1,
+        //% block="up"
+        Up = 2,
+        //% block="down"
+        Down = 3,
+        //% block="right"
+        Right = 4,
+        //% block="left"
+        Left = 5
+    }
+
+    // GLOBAL VARIABLES
     let strip: neopixel.Strip;
     let matrixWidth = 8; // x
     let matrixHeight = 8; // y
+    let defaultBrightness = 100; // 0 to 255
+    let pollingInterval = 100 // 100ms Interval for polling LED Matrix Interface. Adjust the polling interval as needed.
+    let pinSlider: DigitalPin = DigitalPin.P1;
+    let pinCenterButton: DigitalPin = DigitalPin.P2;
+    let pinUpButton: DigitalPin = DigitalPin.P9;
+    let pinDownButton: DigitalPin = DigitalPin.P16;
+    let pinRightButton: DigitalPin = DigitalPin.P8;
+    let pinLeftButton: DigitalPin = DigitalPin.P12;
     let counter = 0;
+    let lastSliderValue = 0;
+    let lastJoystickDirection: JoystickDirection = JoystickDirection.NotPressed;
     let result: number[][] = [];
     let binaryArray: number[] = [];
     let finalResult: number[][] = [];
@@ -15,13 +49,6 @@ namespace NeoPixelMatrix {
     let index: number = 0;
     let debugEnabled: boolean = false;
     let startTime = control.millis();
-
-    enum Direction {
-        //% block="right"
-        Right = 0,
-        //% block="left"
-        Left = 1
-    }
 
     // Simple 8x8 font
     let textFont: { [char: string]: number[] } = {
@@ -96,13 +123,51 @@ namespace NeoPixelMatrix {
 
     //% block="initialize NeoPixel matrix with pin $pin and brightness $brightness"
     //% brightness.min=0 brightness.max=255
-    export function initializeMatrix(pin: DigitalPin, brightness: number): void {
+    export function initializeMatrix(pin: DigitalPin = DigitalPin.P0, brightness: number): void {
+        serial.setBaudRate(BaudRate.BaudRate115200)
+        serial.redirectToUSB();
+
+        defaultBrightness = brightness;
         strip = neopixel.create(pin, matrixWidth * matrixHeight, NeoPixelMode.RGB);
-        let defaultBrightness = brightness;
         strip.setBrightness(brightness);
         clear();
-        serial.redirectToUSB();
-        serialDebugMsg(`initializeMatrix: Matrix init: Pin = ${pin}, Brightness = ${brightness}`);
+        initializeMatrixInterface();
+        serialDebugMsg("initializeMatrix: Matrix init:" + pin + " Brightness" + brightness);
+    }
+
+    function initializeMatrixInterface(): void {
+        pins.setPull(pinSlider, PinPullMode.PullUp);
+        pins.setPull(pinCenterButton, PinPullMode.PullUp);
+        pins.setPull(pinUpButton, PinPullMode.PullUp);
+        pins.setPull(pinDownButton, PinPullMode.PullUp);
+        pins.setPull(pinRightButton, PinPullMode.PullUp);
+        pins.setPull(pinLeftButton, PinPullMode.PullUp);
+        serialDebugMsg("initializeMatrixInterface: pinSlider: " + pinSlider + ", pinCenterButton:" + pinCenterButton + ", pinUpButton: " + pinUpButton + ", pinDownButton: " + pinDownButton + ", pinRightButton:" + pinRightButton + ", pinLeftButton: " + pinLeftButton);
+    }
+
+    //% block="initialize LED Matrix Interface (Expert). \nSlider pin $pinSliderTemp \nCenter button pin $pinCenterButtonTemp \nUp button pin $pinUpButtonTemp \nDown button pin $pinDownButtonTemp \nRight button pin $pinRightButtonTemp \nLeft button pin $pinLeftButtonTemp"
+    export function initializeMatrixInterfaceExpert(
+        pinSliderTemp: DigitalPin,
+        pinCenterButtonTemp: DigitalPin,
+        pinUpButtonTemp: DigitalPin,
+        pinDownButtonTemp: DigitalPin,
+        pinRightButtonTemp: DigitalPin,
+        pinLeftButtonTemp: DigitalPin
+    ): void {
+        pinSlider = pinSliderTemp;
+        pinCenterButton = pinCenterButtonTemp;
+        pinUpButton = pinUpButtonTemp;
+        pinDownButton = pinDownButtonTemp;
+        pinRightButton = pinRightButtonTemp;
+        pinLeftButton = pinLeftButtonTemp;
+
+        pins.setPull(pinSlider, PinPullMode.PullUp);
+        pins.setPull(pinCenterButton, PinPullMode.PullUp);
+        pins.setPull(pinUpButton, PinPullMode.PullUp);
+        pins.setPull(pinDownButton, PinPullMode.PullUp);
+        pins.setPull(pinRightButton, PinPullMode.PullUp);
+        pins.setPull(pinLeftButton, PinPullMode.PullUp);
+        serialDebugMsg("initializeMatrixInterface: pinSlider: " + pinSlider + ", pinCenterButton:" + pinCenterButton + ", pinUpButton: " + pinUpButton + ", pinDownButton: " + pinDownButton + ", pinRightButton:" + pinRightButton + ", pinLeftButton: " + pinLeftButton);
     }
 
     //% block="clear NeoPixel matrix"
@@ -115,21 +180,56 @@ namespace NeoPixelMatrix {
 
     //% block="set Brightness $brightness"
     export function setBrightness(brightness: number): void {
+        defaultBrightness = brightness;
         strip.setBrightness(brightness);
         strip.show();
         serialDebugMsg(`setBrightness: Brightness is set to = ${brightness}`);
     }
 
-    //% block="set pixel at x $x y $y to color $color"
-    //% x.min=0 x.max=7 y.min=0 y.max=7
-    //% color.shadow="colorNumberPicker"
-    export function setPixel(x: number, y: number, color: number): void {
+    function setPixel(x: number, y: number, color: number): void {
         if (strip) {
             if (x >= 0 && x < matrixWidth && y >= 0 && y < matrixHeight) {
                 index = (matrixHeight - 1 - y) * matrixWidth + x;//(y)* 8 + x;
                 strip.setPixelColor(index, color);
+                // serialDebugMsg("setPixel: set pixel(" + x + "," + y + ") to = #" + color);
+            } else {
+                serialDebugMsg("setPixel: Error pixel out of range");
             }
         }
+    }
+
+    //% block="set one pixel at x $x y $y to color $color"
+    //% x.min=0 x.max=7 y.min=0 y.max=7
+    //% color.shadow="colorNumberPicker"
+    export function setOnePixel(x: number, y: number, color: number): void {
+        setPixel(x, y, color);
+        strip.show();
+    }
+
+    //% block="read GPIO $pin"
+    export function readGPIO(pin: DigitalPin): number { // Function not really needed, just for debugging
+        let value = pins.analogReadPin(pin);
+        serialDebugMsg("readGPIO: GPIO: " + pin + " Value: " + value);
+        return value;
+    }
+
+    //% block="read slider value"
+    export function readSlider(): number {
+        return pins.digitalReadPin(pinSlider);
+    }
+
+    //% block="when slider value changed"
+    export function SliderValueChanged(callback: () => void): void {
+        control.inBackground(() => {
+            while (true) {
+                let currentSliderValue = pins.digitalReadPin(pinSlider);
+                if (currentSliderValue !== lastSliderValue) {
+                    lastSliderValue = currentSliderValue;
+                    callback();
+                }
+                basic.pause(pollingInterval);
+            }
+        });
     }
 
     /**
@@ -179,14 +279,6 @@ namespace NeoPixelMatrix {
         }
 
         try {
-            let imagewidth = image.width();
-            let imageheight = image.height();
-
-            serialDebugMsg("imagewidth = " + imagewidth + "imageheight = " + imageheight);
-            serialDebugMsg("matrixWidth = " + matrixWidth + "matrixHeight = " + matrixHeight);
-            serialDebugMsg("direction = " + direction);
-            serialDebugMsg("speed = " + speed);
-
             if (direction === Direction.Left) {
                 for (let offset = -matrixWidth; offset <= matrixWidth; offset++) {
                     for (let x = 0; x < matrixWidth; x++) {
@@ -202,7 +294,8 @@ namespace NeoPixelMatrix {
             } else if (direction === Direction.Right) {
                 for (let offset = matrixWidth; offset >= -matrixWidth; offset--) {
                     for (let x = 0; x < matrixWidth; x++) {
-                        for (let y = 0; y < matrixHeight; y++) {;
+                        for (let y = 0; y < matrixHeight; y++) {
+                            ;
                             const PixelOn = image.pixel(x + offset, y);
                             //serialDebugMsg(`Pixel at (${x + offset}, ${y}) is ${PixelOn ? "on" : "off"}`);
                             setPixel(x, y, PixelOn ? color : 0);
@@ -239,7 +332,6 @@ namespace NeoPixelMatrix {
     }
 
     function getTextArray(text: string): number[][] {
-
         result = [];
         binaryArray = [];
         finalResult = [];
