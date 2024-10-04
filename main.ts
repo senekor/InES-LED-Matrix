@@ -1,19 +1,20 @@
-NeoPixelMatrix.initializeMatrix(DigitalPin.P0, 100)
-NeoPixelMatrix.debugEnable(false)
+input.onButtonPressed(Button.A, function () {
+	
+})
+NeoPixelMatrix.SliderValueChanged(function () {
+    basic.showNumber(NeoPixelMatrix.readSlider())
+    serial.writeValue("slider", NeoPixelMatrix.readSlider())
+    NeoPixelMatrix.setCurrentTime(h, m, s)
+})
+let s = 0
+let m = 0
+let h = 0
+NeoPixelMatrix.debugEnable(true)
+NeoPixelMatrix.initializeMatrix(DigitalPin.P0, 135)
+h = 23
+m = 59
+s = 50
 while (true) {
-    NeoPixelMatrix.movingImage(
-    NeoPixelMatrix.matrix8x8(`
-        . . . # . . . .
-        . . . # . . . .
-        . . . # . . . .
-        # # # # # # # #
-        . . . # . . . .
-        . . . # . . . .
-        . . . # . . . .
-        . . . # . . . .
-        `),
-    0x00ffff,
-    116,
-    Direction.Left
-    )
+    basic.pause(5000)
+    serial.writeLine(NeoPixelMatrix.getCurrentTimeAsText())
 }

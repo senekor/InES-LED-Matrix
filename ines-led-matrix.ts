@@ -7,6 +7,14 @@ namespace NeoPixelMatrix {
         Left = 1
     }
 
+    //% block="JoystickDirection" // in case strings are needed instead of numbers
+    // type JoystickDirection = 
+    //     | "notPressed"
+    //     | "center"
+    //     | "up"
+    //     | "down"
+    //     | "right"
+    //     | "left";
     enum JoystickDirection {
         //% block="notPressed"
         NotPressed = 0,
@@ -23,6 +31,8 @@ namespace NeoPixelMatrix {
     }
 
     // GLOBAL VARIABLES
+    let currentTimeSeconds: number = 0;
+    let timeUpdateInterval: number = 1; // in second
     let strip: neopixel.Strip;
     let matrixWidth = 8; // x
     let matrixHeight = 8; // y
@@ -35,7 +45,7 @@ namespace NeoPixelMatrix {
     let pinRightButton: DigitalPin = DigitalPin.P8;
     let pinLeftButton: DigitalPin = DigitalPin.P12;
     let counter = 0;
-    let lastSliderValue = 0;
+    let lastSliderValue = readSlider();
     let lastJoystickDirection: JoystickDirection = JoystickDirection.NotPressed;
     let result: number[][] = [];
     let binaryArray: number[] = [];
@@ -48,7 +58,6 @@ namespace NeoPixelMatrix {
     let totalWidth: number = 0;
     let index: number = 0;
     let debugEnabled: boolean = false;
-    let startTime = control.millis();
 
     // Simple 8x8 font
     let textFont: { [char: string]: number[] } = {
@@ -132,7 +141,12 @@ namespace NeoPixelMatrix {
         strip.setBrightness(brightness);
         clear();
         initializeMatrixInterface();
-        serialDebugMsg("initializeMatrix: Matrix init:" + pin + " Brightness" + brightness);
+        control.inBackground(function () {
+            while (true) {
+                calculateCurrentTime();
+            }
+        });
+        serialDebugMsg("initializeMatrix: Matrix init on pin: " + pin + " with brightness: " + brightness);
     }
 
     function initializeMatrixInterface(): void {
@@ -204,6 +218,17 @@ namespace NeoPixelMatrix {
     export function setOnePixel(x: number, y: number, color: number): void {
         setPixel(x, y, color);
         strip.show();
+        serialDebugMsg("setOnePixel: Pixel: " + x + "," + y + " is set to color: " + color);
+    }
+
+    //% block="set one pixel at x:$x y:$y to RGB colors R:$R G:$G B:$B"
+    //% x.min=0 x.max=7 y.min=0 y.max=7
+    //% R.min=0 R.max=255 G.min=0 G.max=255 B.min=0 B.max=255
+    export function setOnePixelRGB(x: number, y: number, R: number, G: number, B: number): void {
+        let color = neopixel.rgb(R, G, B);
+        setPixel(x, y, color);
+        strip.show();
+        serialDebugMsg("setOnePixel: Pixel: " + x + "," + y + " is set to color(R,G,B): (" + R + "," + G + "," + B + ")");
     }
 
     //% block="read GPIO $pin"
@@ -230,6 +255,23 @@ namespace NeoPixelMatrix {
                 basic.pause(pollingInterval);
             }
         });
+    }
+
+    //% block="read joystick direction"
+    export function readJoystick(): number {
+        if (pins.digitalReadPin(pinCenterButton) == 0) {
+            return JoystickDirection.Center;
+        } else if (pins.digitalReadPin(pinUpButton) == 0) {
+            return JoystickDirection.Up;
+        } else if (pins.digitalReadPin(pinDownButton) == 0) {
+            return JoystickDirection.Down;
+        } else if (pins.digitalReadPin(pinRightButton) == 0) {
+            return JoystickDirection.Right;
+        } else if (pins.digitalReadPin(pinLeftButton) == 0) {
+            return JoystickDirection.Left;
+        } else {
+            return JoystickDirection.NotPressed;
+        }
     }
 
     /**
@@ -398,12 +440,48 @@ namespace NeoPixelMatrix {
         return finalResult;
     }
 
-    function getCurrentTime(): string {
-        const elapsedMillis = control.millis() - startTime;
-        const totalSeconds = Math.floor(elapsedMillis / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        return `${hours}:${minutes}:${seconds}`;
+    // Function to calculate the current time, needs to be run in the background
+    function calculateCurrentTime(): void {
+        currentTimeSeconds = currentTimeSeconds + timeUpdateInterval;
+        if (currentTimeSeconds >= 86400) {
+            currentTimeSeconds = 0;
+        }
+        basic.pause(timeUpdateInterval * 1000);
+        serialDebugMsg("calculateCurrentTime: currentTimeSeconds = " + currentTimeSeconds);
+    }
+
+    //% block="get current time as text"
+    export function getCurrentTimeAsText(): string {
+        let hours = Math.floor(currentTimeSeconds / 3600) % 24;
+        let minutes = Math.floor((currentTimeSeconds % 3600) / 60);
+        let seconds = currentTimeSeconds % 60;
+
+        // // return the time as a 2D array of numbers
+        // return [
+        //     [hours],
+        //     [minutes],
+        //     [seconds]
+        // ];
+        return `${hours}:${minutes}:${seconds}`; // return the time as a string
+    }
+
+    // TODO Bug in block no slider for setting time, only works with variables
+    //% block="set current time to $hours:$minutes:$seconds"
+    //% hours.min=0 hours.max=23
+    //% minutes.min = 0 minutes.max = 59
+    //% seconds.min = 0 seconds.max = 59
+    export function setCurrentTime(hours: number, minutes: number, seconds: number): void {
+        // Validate the input time
+        if (hours < 0 || hours > 23) {
+            serialDebugMsg("Invalid hours. Must be between 0 and 23.");
+        } else if (minutes < 0 || minutes > 59) {
+            serialDebugMsg("Invalid minutes. Must be between 0 and 59.");
+        } else if (seconds < 0 || seconds > 59) {
+            serialDebugMsg("Invalid seconds. Must be between 0 and 59.");
+        } else {
+            // Calculate the start time in seconds
+            currentTimeSeconds = hours * 3600 + minutes * 60 + seconds; // TODO unclear if something like mutex is needed here, overwriting the time while it is being calculated by different threads could lead to unexpected results because is not atomic operation
+            serialDebugMsg(`setCurrentTime: Time set to ${hours}:${minutes}:${seconds}`);
+        }
     }
 }
