@@ -31,8 +31,12 @@ namespace NeoPixelMatrix {
     }
 
     // GLOBAL VARIABLES
+    const startTime = control.millis();
     let currentTimeSeconds: number = 0;
-    let timeUpdateInterval: number = 1; // in second
+    const timeUpdateInterval: number = 1; // in second
+    let timeUpdateIntervalCounter = 0;
+    let isUpdatingTime: boolean = false;
+    let missedTimeUpdates: number = 0;
     let strip: neopixel.Strip;
     let matrixWidth = 8; // x
     let matrixHeight = 8; // y
@@ -440,14 +444,42 @@ namespace NeoPixelMatrix {
         return finalResult;
     }
 
+    function sleepUntil(targetTime: number): void {
+        const currentTime = control.millis();
+        const delay = targetTime - currentTime;
+
+        if (delay <= 0) {
+            // If the target time is in the past or now, call the callback immediately
+        } else {
+            basic.pause(delay);
+        }
+    }
+
     // Function to calculate the current time, needs to be run in the background
     function calculateCurrentTime(): void {
-        currentTimeSeconds = currentTimeSeconds + timeUpdateInterval;
-        if (currentTimeSeconds >= 86400) {
-            currentTimeSeconds = 0;
+        // Calculate the next wake-up time
+        let nextWakeUpTime = startTime + timeUpdateInterval * 1000 * timeUpdateIntervalCounter;
+
+        // Sleep until the next wake-up time
+        sleepUntil(nextWakeUpTime);
+        if (!isUpdatingTime) { // Mutex to prevent updating time while it is being calculated
+            isUpdatingTime = true;
+            currentTimeSeconds = currentTimeSeconds + timeUpdateInterval + missedTimeUpdates;
+            if (currentTimeSeconds >= 86400) {
+                currentTimeSeconds = 0;
+            }
+            isUpdatingTime = false;
+            missedTimeUpdates = 0;
+        } else {
+            missedTimeUpdates++;
+            serialDebugMsg("calculateCurrentTime: Time is being updated, trying again later. Missed updates: " + missedTimeUpdates);
+            return;
         }
-        basic.pause(timeUpdateInterval * 1000);
+        timeUpdateIntervalCounter++;
         serialDebugMsg("calculateCurrentTime: currentTimeSeconds = " + currentTimeSeconds);
+
+        // Schedule the next calculation
+        // calculateCurrentTime(); // DO not use nested calls to calculateCurrentTime within the callback of sleepUntil can lead to fucked up shit.
     }
 
     //% block="get current time as text"
@@ -479,9 +511,17 @@ namespace NeoPixelMatrix {
         } else if (seconds < 0 || seconds > 59) {
             serialDebugMsg("Invalid seconds. Must be between 0 and 59.");
         } else {
-            // Calculate the start time in seconds
-            currentTimeSeconds = hours * 3600 + minutes * 60 + seconds; // TODO unclear if something like mutex is needed here, overwriting the time while it is being calculated by different threads could lead to unexpected results because is not atomic operation
-            serialDebugMsg(`setCurrentTime: Time set to ${hours}:${minutes}:${seconds}`);
+            if (!isUpdatingTime) { // Mutex to prevent updating time while it is being calculated
+                // Calculate the start time in seconds
+                isUpdatingTime = true;
+                currentTimeSeconds = hours * 3600 + minutes * 60 + seconds;
+                isUpdatingTime = false;
+                serialDebugMsg(`setCurrentTime: Time set to ${hours}:${minutes}:${seconds}`);
+
+            } else {
+                serialDebugMsg("setCurrentTime: Time is being updated, please try again later.");
+                return;
+            }
         }
     }
 }
