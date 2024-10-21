@@ -14,15 +14,16 @@ NeoPixelMatrix.initializeMatrix(DigitalPin.P0, 135)
 h = 0
 m = 0
 s = 0
+NeoPixelMatrix.createWordClock(
+1,
+0xff0000,
+0xff0000,
+0xff0000
+)
 while (true) {
     basic.pause(5000)
     serial.writeLine(NeoPixelMatrix.getCurrentTimeAsText())
 }
 control.inBackground(function () {
-    NeoPixelMatrix.createWordClock(
-    2,
-    0xffff00,
-    0x00ff00,
-    0xff0000
-    )
+	
 })
