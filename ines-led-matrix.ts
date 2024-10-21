@@ -7,7 +7,7 @@ namespace NeoPixelMatrix {
         Left = 1
     }
 
-    //% block="JoystickDirection" // in case strings are needed instead of numbers
+    // //% block="JoystickDirection" // in case strings are needed instead of numbers
     // type JoystickDirection = 
     //     | "notPressed"
     //     | "center"
@@ -40,8 +40,9 @@ namespace NeoPixelMatrix {
     let strip: neopixel.Strip;
     let matrixWidth = 8; // x
     let matrixHeight = 8; // y
-    let defaultBrightness = 100; // 0 to 255
+    let currentBrightness = 100; // 0 to 255
     let pollingInterval = 100 // 100ms Interval for polling LED Matrix Interface. Adjust the polling interval as needed.
+    let wordClockDisplayUpdateInterval = 3; // 1 second
     let pinSlider: DigitalPin = DigitalPin.P1;
     let pinCenterButton: DigitalPin = DigitalPin.P2;
     let pinUpButton: DigitalPin = DigitalPin.P9;
@@ -140,7 +141,7 @@ namespace NeoPixelMatrix {
         serial.setBaudRate(BaudRate.BaudRate115200)
         serial.redirectToUSB();
 
-        defaultBrightness = brightness;
+        currentBrightness = brightness;
         strip = neopixel.create(pin, matrixWidth * matrixHeight, NeoPixelMode.RGB);
         strip.setBrightness(brightness);
         clear();
@@ -185,6 +186,7 @@ namespace NeoPixelMatrix {
         pins.setPull(pinDownButton, PinPullMode.PullUp);
         pins.setPull(pinRightButton, PinPullMode.PullUp);
         pins.setPull(pinLeftButton, PinPullMode.PullUp);
+        basic.pause(5); // Wait 5ms for pull-up to take effect
         serialDebugMsg("initializeMatrixInterface: pinSlider: " + pinSlider + ", pinCenterButton:" + pinCenterButton + ", pinUpButton: " + pinUpButton + ", pinDownButton: " + pinDownButton + ", pinRightButton:" + pinRightButton + ", pinLeftButton: " + pinLeftButton);
     }
 
@@ -198,7 +200,7 @@ namespace NeoPixelMatrix {
 
     //% block="set Brightness $brightness"
     export function setBrightness(brightness: number): void {
-        defaultBrightness = brightness;
+        currentBrightness = brightness;
         strip.setBrightness(brightness);
         strip.show();
         serialDebugMsg(`setBrightness: Brightness is set to = ${brightness}`);
@@ -444,6 +446,7 @@ namespace NeoPixelMatrix {
         return finalResult;
     }
 
+    // TODO make time class out if time stuff, ore else start organizing this mess
     function sleepUntil(targetTime: number): void {
         const currentTime = control.millis();
         const delay = targetTime - currentTime;
@@ -476,10 +479,7 @@ namespace NeoPixelMatrix {
             return;
         }
         timeUpdateIntervalCounter++;
-        serialDebugMsg("calculateCurrentTime: currentTimeSeconds = " + currentTimeSeconds);
-
-        // Schedule the next calculation
-        // calculateCurrentTime(); // DO not use nested calls to calculateCurrentTime within the callback of sleepUntil can lead to fucked up shit.
+        // serialDebugMsg("calculateCurrentTime: currentTimeSeconds = " + currentTimeSeconds);
     }
 
     //% block="get current time as text"
@@ -524,4 +524,439 @@ namespace NeoPixelMatrix {
             }
         }
     }
+
+    class ClockTable {
+        public ONE: [number, number][];
+        public TWO: [number, number][];
+        public THREE: [number, number][];
+        public FOUR: [number, number][];
+        public HOUR_FIVE: [number, number][];
+        public MIN_FIVE: [number, number][];
+        public SIX: [number, number][];
+        public SEVEN: [number, number][];
+        public EIGHT: [number, number][];
+        public NINE: [number, number][];
+        public HOUR_TEN: [number, number][];
+        public MIN_TEN: [number, number][];
+        public ELEVEN: [number, number][];
+        public TWELVE: [number, number][];
+        public QUARTER: [number, number][];
+        public TWENTY: [number, number][];
+        public TWENTY_FIVE: [number, number][];
+        public HALF: [number, number][];
+        public PAST: [number, number][];
+        public TO: [number, number][];
+        public ZHAW: [number, number][];
+        public HOURS_MAPPING: { [key: number]: [number, number][] };
+        public MINUTES_MAPPING: { [key: number]: [number, number][] | number };
+
+        constructor(version: number = 1) {
+            this.ONE = [
+                [1, 7],
+                [4, 7],
+                [7, 7],
+            ];
+            this.TWO = [
+                [0, 6],
+                [1, 6],
+                [1, 7],
+            ];
+            this.THREE = [
+                [3, 5],
+                [4, 5],
+                [5, 5],
+                [6, 5],
+                [7, 5],
+            ];
+            this.FOUR = [
+                [0, 7],
+                [1, 7],
+                [2, 7],
+                [3, 7],
+            ];
+            this.HOUR_FIVE = [
+                [0, 4],
+                [1, 4],
+                [2, 4],
+                [3, 4],
+            ];
+            this.MIN_FIVE = [
+                [4, 2],
+                [5, 2],
+                [6, 2],
+                [7, 2],
+            ];
+            this.SIX = [
+                [0, 5],
+                [1, 5],
+                [2, 5],
+            ];
+            this.SEVEN = [
+                [0, 5],
+                [4, 6],
+                [5, 6],
+                [6, 6],
+                [7, 6],
+            ];
+            this.EIGHT = [
+                [3, 4],
+                [4, 4],
+                [5, 4],
+                [6, 4],
+                [7, 4],
+            ];
+            this.NINE = [
+                [4, 7],
+                [5, 7],
+                [6, 7],
+                [7, 7],
+            ];
+            this.HOUR_TEN = [
+                [7, 4],
+                [7, 5],
+                [7, 6],
+            ];
+            this.MIN_TEN = [
+                [2, 0],
+                [4, 0],
+                [5, 0],
+            ];
+            this.ELEVEN = [
+                [2, 6],
+                [3, 6],
+                [4, 6],
+                [5, 6],
+                [6, 6],
+                [7, 6],
+            ];
+            this.TWELVE = [
+                [0, 6],
+                [1, 6],
+                [2, 6],
+                [3, 6],
+                [5, 6],
+                [6, 6],
+            ];
+            this.QUARTER = [
+                [1, 1],
+                [2, 1],
+                [3, 1],
+                [4, 1],
+                [5, 1],
+                [6, 1],
+                [7, 1],
+            ];
+            this.TWENTY = [
+                [2, 0],
+                [3, 0],
+                [4, 0],
+                [5, 0],
+                [6, 0],
+                [7, 0],
+            ];
+            this.TWENTY_FIVE = [
+                [2, 0],
+                [3, 0],
+                [4, 0],
+                [5, 0],
+                [6, 0],
+                [7, 0],
+                [4, 2],
+                [5, 2],
+                [6, 2],
+                [7, 2],
+            ];
+
+            if (version === 1) {
+                this.HALF = [
+                    [0, 2],
+                    [1, 2],
+                    [2, 2],
+                    [3, 2],
+                ];
+                this.PAST = [
+                    [1, 3],
+                    [2, 3],
+                    [3, 3],
+                    [4, 3],
+                ];
+                this.TO = [
+                    [6, 3],
+                    [7, 3],
+                ];
+                this.ZHAW = [
+                    [0, 0],
+                    [0, 1],
+                    [1, 2],
+                    [0, 3],
+                ];
+            } else if (version === 2) {
+                this.HALF = [
+                    [1, 2],
+                    [2, 2],
+                    [3, 2],
+                    [4, 2],
+                ];
+                this.PAST = [
+                    [2, 3],
+                    [3, 3],
+                    [4, 3],
+                    [5, 3],
+                ];
+                this.TO = [
+                    [5, 3],
+                    [6, 3],
+                ];
+                this.ZHAW = [
+                    [0, 0],
+                    [0, 1],
+                    [0, 2],
+                    [0, 3],
+                ];
+            }
+
+            // Lookup dictionary for wordclock hours
+            this.HOURS_MAPPING = {
+                0: this.TWELVE,
+                1: this.ONE,
+                2: this.TWO,
+                3: this.THREE,
+                4: this.FOUR,
+                5: this.HOUR_FIVE,
+                6: this.SIX,
+                7: this.SEVEN,
+                8: this.EIGHT,
+                9: this.NINE,
+                10: this.HOUR_TEN,
+                11: this.ELEVEN,
+            };
+
+            // Lookup dictionary for wordclock minutes
+            this.MINUTES_MAPPING = {
+                0: 0,
+                5: this.MIN_FIVE,
+                10: this.MIN_TEN,
+                15: this.QUARTER,
+                20: this.TWENTY,
+                25: this.TWENTY_FIVE,
+                30: this.HALF,
+            };
+        }
+    }
+
+    class WordClock {
+        private _matrix: any;
+        private _clocktable: any;
+
+        public hourColor: number;
+        public minuteColor: number;
+        public wordColor: number;
+        public brightness: number;
+
+        constructor(version: number = 1, hourColor: number, minuteColor: number, wordColor: number) {
+            this._clocktable = new ClockTable(version);
+            this.hourColor = hourColor;
+            this.minuteColor = minuteColor;
+            this.wordColor = wordColor;
+            this.brightness = currentBrightness;
+            this._matrix = strip;
+
+            if (!this._matrix) {
+                serialDebugMsg("WordClock: Error - Matrix (strip) is not initialized");
+            } else {
+                serialDebugMsg("WordClock: Matrix (strip) initialized successfully");
+            }
+
+            //this.displayTime();
+            //this.waitUntilRefresh();
+            serialDebugMsg("WordClock: Word clock initialized");
+        }
+
+        private waitUntilRefresh(): void {
+            const nextWakeUpTime = currentTimeSeconds + wordClockDisplayUpdateInterval;
+            serialDebugMsg("WordClock: waitUntilRefresh: Refreshing display, currentTimeSeconds = " + currentTimeSeconds + ", nextWakeUpTime = " + nextWakeUpTime);
+            sleepUntil(nextWakeUpTime * 1000);
+
+        }
+
+        private setClockPixels(pixels: [number, number][], color: number): void {
+            for (let i = 0; i < pixels.length; i++) {
+                const x = pixels[i][0];
+                const y = pixels[i][1];
+                setPixel(x, y, color);
+                serialDebugMsg("WordClock: setClockPixels: Set pixel(" + x + "," + y + ") to color: " + color);
+            }
+        }
+
+        public displayTime(): void {
+            if (!this._matrix || !this._clocktable) {
+                serialDebugMsg("WordClock: Error - Matrix or ClockTable is not initialized");
+                return;
+            }
+
+            let hours = currentTimeSeconds / 3600;
+            let minutes = currentTimeSeconds / 60;
+
+            serialDebugMsg("WordClock: hours = " + hours + ", minutes = " + minutes);
+            let modifier: [number, number][];
+
+            if (minutes > 32) {
+                hours += 1;
+                minutes = 60 - minutes;
+                modifier = this._clocktable.TO;
+            } else {
+                modifier = this._clocktable.PAST;
+            }
+            serialDebugMsg("WordClock: 1");
+
+            minutes = 5 * Math.round(minutes / 5);
+            hours = Math.floor(hours % 12);
+
+            serialDebugMsg("WordClock: 2");
+
+            this._matrix.clear();
+
+            serialDebugMsg("WordClock: 3, hours = " + hours + ", minutes = " + minutes);
+
+            // Debugging: Check if HOURS_MAPPING[hours] is an array of tuples
+            const hoursMapping = this._clocktable.HOURS_MAPPING[hours];
+            serialDebugMsg("WordClock: HOURS_MAPPING[hours] = " + JSON.stringify(hoursMapping));
+            // basic.pause(1);
+            // if (!Array.isArray(hoursMapping) || !hoursMapping.every((item: [number, number]) => Array.isArray(item) && item.length === 2)) {
+            //     serialDebugMsg("WordClock: Error - HOURS_MAPPING[hours] is not a valid array of tuples");
+            //     basic.pause(1)
+            //     return;
+            // }
+
+            serialDebugMsg("WordClock: 3.1");
+            basic.pause(10);
+            if (!hoursMapping) {
+                serialDebugMsg("WordClock: Error - HOURS_MAPPING[hours] is not a valid array of tuples");
+            } else {
+                serialDebugMsg("WordClock: HOURS_MAPPING[hours] is a valid");
+            }
+            serialDebugMsg("WordClock: 3.1.1");
+            basic.pause(10);
+
+
+            // serialDebugMsg("hoursMapping length" + hoursMapping.length); // doing this freezes code
+            // serialDebugMsg("hoursMapping length" + this._clocktable.HOURS_MAPPING[hours].length); // doing this freezes code
+            serialDebugMsg("WordClock: _clocktable.TWELVE = " + JSON.stringify(this._clocktable.TWELVE));
+            // serialDebugMsg("hoursMapping length" + this._clocktable.TWELVE.length); // doing this freezes code
+            // serialDebugMsg("x1 = " + this._clocktable.TWELVE[0][0] + ", y1 = " + this._clocktable.TWELVE[0][1]);
+            serialDebugMsg("WordClock: 3.1.2");
+            basic.pause(10);
+            
+            // Check if this._clocktable.TWELVE is defined and not null
+            if (this._clocktable.TWELVE !== undefined && this._clocktable.TWELVE !== null) {
+                serialDebugMsg("WordClock: _clocktable.TWELVE is defined and not null");
+                basic.pause(10);
+                serialDebugMsg("WordClock: _clocktable.TWELVE type: " + typeof this._clocktable.TWELVE);
+                basic.pause(10);
+                serialDebugMsg("WordClock: _clocktable.TWELVE content: " + JSON.stringify(this._clocktable.TWELVE));
+                basic.pause(10);
+
+                // Check if this._clocktable.TWELVE is an array
+                if (Array.isArray(this._clocktable.TWELVE)) {
+                    serialDebugMsg("WordClock: _clocktable.TWELVE is an array");
+                    basic.pause(10);
+                    // Check the length of the array
+                    if (this._clocktable.TWELVE.length > 0) {
+                        serialDebugMsg("WordClock: _clocktable.TWELVE length: " + this._clocktable.TWELVE.length);
+                        basic.pause(10);
+                        // Access the first element safely
+                        if (Array.isArray(this._clocktable.TWELVE[0])) {
+                            serialDebugMsg("WordClock: First element of _clocktable.TWELVE is an array with length " + this._clocktable.TWELVE[0].length);
+                            if (this._clocktable.TWELVE[0].length === 2) {
+                                serialDebugMsg("x1 = " + this._clocktable.TWELVE[0][0] + ", y1 = " + this._clocktable.TWELVE[0][1]);
+                            } else {
+                                serialDebugMsg("WordClock: Error - First element of _clocktable.TWELVE is not a valid tuple");
+                            }
+                        } else {
+                            serialDebugMsg("WordClock: Error - First element of _clocktable.TWELVE is not an array");
+                        }
+                    } else {
+                        serialDebugMsg("WordClock: Error - _clocktable.TWELVE is an empty array");
+                    }
+                } else {
+                    serialDebugMsg("WordClock: Error - _clocktable.TWELVE is not an array");
+                }
+            } else {
+                serialDebugMsg("WordClock: Error - _clocktable.TWELVE is undefined or null");
+            }
+
+            serialDebugMsg("WordClock: 3.1.3");
+            basic.pause(10);
+
+            for (let i = 0; i < 5; i++) {
+                //serialDebugMsg("hoursMapping length" + hoursMapping.length);
+                const x = hoursMapping[i][0];
+                const y = hoursMapping[i][1];
+                serialDebugMsg("WordClock: setClockPixels: Set pixel(" + x + "," + y + ") to color: " + this.hourColor);
+                basic.pause(10);
+                setPixel(x, y, this.hourColor);
+
+            }
+
+
+            // Set pixels for hours
+            this.setClockPixels(hoursMapping, this.hourColor);
+
+            serialDebugMsg("WordClock: 3.2");
+            basic.pause(1);
+
+            if (minutes !== 0) {
+                // Set pixels for minutes
+                const minutesMapping = this._clocktable.MINUTES_MAPPING[minutes];
+                serialDebugMsg("WordClock: MINUTES_MAPPING[minutes] = " + JSON.stringify(minutesMapping));
+                if (Array.isArray(minutesMapping) && minutesMapping.every((item: [number, number]) => Array.isArray(item) && item.length === 2)) {
+                    this.setClockPixels(minutesMapping as [number, number][], this.minuteColor);
+                } else {
+                    serialDebugMsg("WordClock: Error - MINUTES_MAPPING[minutes] is not a valid array of tuples");
+                }
+                // Set pixels for modifier
+                this.setClockPixels(modifier, this.wordColor);
+            }
+
+            this._matrix.setBrightness(this.brightness);
+            this._matrix.show();
+
+            serialDebugMsg("WordClock: 4");
+
+            // Wait until the next full minute to refresh the display
+            this.waitUntilRefresh();
+            serialDebugMsg("WordClock: 5");
+        }
+
+
+    }
+
+    // Not if this block is used with the control.inBackground block, it will not work #BUG
+    //% block="create word clock, version $version, hour color $hourColor, minute color $minuteColor, word color $wordColor"
+    //% version.defl=1
+    //% hourColor.shadow="colorNumberPicker"
+    //% minuteColor.shadow="colorNumberPicker"
+    //% wordColor.shadow="colorNumberPicker"
+    export function createWordClock(version: number = 1, hourColor: number, minuteColor: number, wordColor: number): void {
+        control.inBackground(() => {
+            const wordClock = new WordClock(version, hourColor, minuteColor, wordColor);
+            if (!wordClock) {
+                serialDebugMsg("createWordClock: Error - WordClock object is not initialized");
+            } else {
+                serialDebugMsg("createWordClock: WordClock object initialized successfully");
+            }
+
+            while (true) {
+                try {
+                    wordClock.displayTime();
+                    // TODO logic for joystick to change colors and time, currently waitUntilRefresh makes it impossible to change time
+                }
+                catch (e) {
+                    serialDebugMsg("createWordClock: Error in word clock");
+                }
+
+            }
+        });
+    }
+
 }

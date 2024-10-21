@@ -11,10 +11,18 @@ let m = 0
 let h = 0
 NeoPixelMatrix.debugEnable(true)
 NeoPixelMatrix.initializeMatrix(DigitalPin.P0, 135)
-h = 23
-m = 59
-s = 50
+h = 0
+m = 0
+s = 0
 while (true) {
     basic.pause(5000)
     serial.writeLine(NeoPixelMatrix.getCurrentTimeAsText())
 }
+control.inBackground(function () {
+    NeoPixelMatrix.createWordClock(
+    2,
+    0xffff00,
+    0x00ff00,
+    0xff0000
+    )
+})
