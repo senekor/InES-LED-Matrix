@@ -755,20 +755,20 @@ namespace NeoPixelMatrix {
 
         constructor(version: number = 1, hourColor: number, minuteColor: number, wordColor: number) {
             this._clocktable = new ClockTable(version);
+            basic.pause(100);
             this.hourColor = hourColor;
             this.minuteColor = minuteColor;
             this.wordColor = wordColor;
             this.brightness = currentBrightness;
             this._matrix = strip;
 
-            if (!this._matrix) {
-                serialDebugMsg("WordClock: Error - Matrix (strip) is not initialized");
-            } else {
-                serialDebugMsg("WordClock: Matrix (strip) initialized successfully");
+            if (!this._matrix || !this._clocktable) {
+                serialDebugMsg("WordClock: Error - Matrix or ClockTable is not initialized");
+                return;
             }
 
-            //this.displayTime();
-            //this.waitUntilRefresh();
+            this.displayTime();
+            this.waitUntilRefresh();
             serialDebugMsg("WordClock: Word clock initialized");
         }
 
@@ -818,6 +818,19 @@ namespace NeoPixelMatrix {
 
             serialDebugMsg("WordClock: 3, hours = " + hours + ", minutes = " + minutes);
 
+
+            // let ONE_TEST: Array<[number, number]>;
+            //let ONE_TEST: any
+            let ONE_TEST = [
+                [1, 7],
+                [4, 7],
+                [7, 7],
+            ];
+
+            serialDebugMsg("WordClock: ONE_TEST = " + JSON.stringify(ONE_TEST));
+            serialDebugMsg("WordClock: ONE_TEST[0] = " + JSON.stringify(ONE_TEST[0]));
+            serialDebugMsg("WordClock: ONE_TEST[0][0] = " + JSON.stringify(ONE_TEST[0][0]));
+
             // Debugging: Check if HOURS_MAPPING[hours] is an array of tuples
             const hoursMapping = this._clocktable.HOURS_MAPPING[hours];
             serialDebugMsg("WordClock: HOURS_MAPPING[hours] = " + JSON.stringify(hoursMapping));
@@ -846,13 +859,29 @@ namespace NeoPixelMatrix {
             // serialDebugMsg("x1 = " + this._clocktable.TWELVE[0][0] + ", y1 = " + this._clocktable.TWELVE[0][1]);
             serialDebugMsg("WordClock: 3.1.2");
             basic.pause(10);
-            
+
+            if (!this._clocktable || !this._clocktable.TWELVE) {
+                serialDebugMsg("WordClock: Error - _clocktable or _clocktable.TWELVE is not defined");
+                return;
+            }
+
+            serialDebugMsg("WordClock: _clocktable.TWELVE type: " + typeof this._clocktable.TWELVE);
+            basic.pause(10);
+            if (!this._clocktable.TWELVE[0]) { // code crashes here
+                serialDebugMsg("WordClock: Error - this._clocktable.TWELVE[0] not a valid array of tuples");
+            } else {
+                serialDebugMsg("WordClock: this._clocktable.TWELVE[0] is a valid");
+            }
+            basic.pause(10);
+            serialDebugMsg("WordClock: _clocktable.TWELVE[0] type: " + typeof this._clocktable.TWELVE[0]); // code crashes here
+            basic.pause(10);
+            serialDebugMsg("WordClock: _clocktable.TWELVE[0][0] type: " + typeof this._clocktable.TWELVE[0][0]); // code crashes here
+            basic.pause(10);
+
             // Check if this._clocktable.TWELVE is defined and not null
             if (this._clocktable.TWELVE !== undefined && this._clocktable.TWELVE !== null) {
                 serialDebugMsg("WordClock: _clocktable.TWELVE is defined and not null");
-                basic.pause(10);
                 serialDebugMsg("WordClock: _clocktable.TWELVE type: " + typeof this._clocktable.TWELVE);
-                basic.pause(10);
                 serialDebugMsg("WordClock: _clocktable.TWELVE content: " + JSON.stringify(this._clocktable.TWELVE));
                 basic.pause(10);
 
@@ -861,12 +890,13 @@ namespace NeoPixelMatrix {
                     serialDebugMsg("WordClock: _clocktable.TWELVE is an array");
                     basic.pause(10);
                     // Check the length of the array
-                    if (this._clocktable.TWELVE.length > 0) {
+                    if (this._clocktable.TWELVE.length > 0) { // code crashes here
                         serialDebugMsg("WordClock: _clocktable.TWELVE length: " + this._clocktable.TWELVE.length);
                         basic.pause(10);
                         // Access the first element safely
                         if (Array.isArray(this._clocktable.TWELVE[0])) {
                             serialDebugMsg("WordClock: First element of _clocktable.TWELVE is an array with length " + this._clocktable.TWELVE[0].length);
+                            basic.pause(10);
                             if (this._clocktable.TWELVE[0].length === 2) {
                                 serialDebugMsg("x1 = " + this._clocktable.TWELVE[0][0] + ", y1 = " + this._clocktable.TWELVE[0][1]);
                             } else {
@@ -938,25 +968,26 @@ namespace NeoPixelMatrix {
     //% minuteColor.shadow="colorNumberPicker"
     //% wordColor.shadow="colorNumberPicker"
     export function createWordClock(version: number = 1, hourColor: number, minuteColor: number, wordColor: number): void {
-        control.inBackground(() => {
-            const wordClock = new WordClock(version, hourColor, minuteColor, wordColor);
-            if (!wordClock) {
-                serialDebugMsg("createWordClock: Error - WordClock object is not initialized");
-            } else {
-                serialDebugMsg("createWordClock: WordClock object initialized successfully");
+        // control.inBackground(() => {
+        const wordClock = new WordClock(version, hourColor, minuteColor, wordColor);
+        basic.pause(100);
+        if (!wordClock) {
+            serialDebugMsg("createWordClock: Error - WordClock object is not initialized");
+        } else {
+            serialDebugMsg("createWordClock: WordClock object initialized successfully");
+        }
+
+        while (true) {
+            try {
+                wordClock.displayTime();
+                // TODO logic for joystick to change colors and time, currently waitUntilRefresh makes it impossible to change time
+            }
+            catch (e) {
+                serialDebugMsg("createWordClock: Error in word clock");
             }
 
-            while (true) {
-                try {
-                    wordClock.displayTime();
-                    // TODO logic for joystick to change colors and time, currently waitUntilRefresh makes it impossible to change time
-                }
-                catch (e) {
-                    serialDebugMsg("createWordClock: Error in word clock");
-                }
-
-            }
-        });
+        }
+        // });
     }
 
 }
