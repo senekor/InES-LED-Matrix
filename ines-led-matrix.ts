@@ -526,193 +526,165 @@ namespace NeoPixelMatrix {
     }
 
     class ClockTable {
-        public ONE: [number, number][];
-        public TWO: [number, number][];
-        public THREE: [number, number][];
-        public FOUR: [number, number][];
-        public HOUR_FIVE: [number, number][];
-        public MIN_FIVE: [number, number][];
-        public SIX: [number, number][];
-        public SEVEN: [number, number][];
-        public EIGHT: [number, number][];
-        public NINE: [number, number][];
-        public HOUR_TEN: [number, number][];
-        public MIN_TEN: [number, number][];
-        public ELEVEN: [number, number][];
-        public TWELVE: [number, number][];
-        public QUARTER: [number, number][];
-        public TWENTY: [number, number][];
-        public TWENTY_FIVE: [number, number][];
-        public HALF: [number, number][];
-        public PAST: [number, number][];
-        public TO: [number, number][];
-        public ZHAW: [number, number][];
-        public HOURS_MAPPING: { [key: number]: [number, number][] };
-        public MINUTES_MAPPING: { [key: number]: [number, number][] | number };
+        public ONE: number[][] = [];
+        public TWO: number[][] = [];
+        public THREE: number[][] = [];
+        public FOUR: number[][] = [];
+        public HOUR_FIVE: number[][] = [];
+        public MIN_FIVE: number[][] = [];
+        public SIX: number[][] = [];
+        public SEVEN: number[][] = [];
+        public EIGHT: number[][] = [];
+        public NINE: number[][] = [];
+        public HOUR_TEN: number[][] = [];
+        public MIN_TEN: number[][] = [];
+        public ELEVEN: number[][] = [];
+        public TWELVE: number[][] = [];
+        public QUARTER: number[][] = [];
+        public TWENTY: number[][] = [];
+        public TWENTY_FIVE: number[][] = [];
+        public HALF: number[][] = [];
+        public PAST: number[][] = [];
+        public TO: number[][] = [];
+        public ZHAW: number[][] = [];
+        public HOURS_MAPPING: { [key: number]: number[][] };
+        public MINUTES_MAPPING: { [key: number]: number[][] | number };
 
         constructor(version: number = 1) {
-            this.ONE = [
-                [1, 7],
-                [4, 7],
-                [7, 7],
-            ];
-            this.TWO = [
-                [0, 6],
-                [1, 6],
-                [1, 7],
-            ];
-            this.THREE = [
-                [3, 5],
-                [4, 5],
-                [5, 5],
-                [6, 5],
-                [7, 5],
-            ];
-            this.FOUR = [
-                [0, 7],
-                [1, 7],
-                [2, 7],
-                [3, 7],
-            ];
-            this.HOUR_FIVE = [
-                [0, 4],
-                [1, 4],
-                [2, 4],
-                [3, 4],
-            ];
-            this.MIN_FIVE = [
-                [4, 2],
-                [5, 2],
-                [6, 2],
-                [7, 2],
-            ];
-            this.SIX = [
-                [0, 5],
-                [1, 5],
-                [2, 5],
-            ];
-            this.SEVEN = [
-                [0, 5],
-                [4, 6],
-                [5, 6],
-                [6, 6],
-                [7, 6],
-            ];
-            this.EIGHT = [
-                [3, 4],
-                [4, 4],
-                [5, 4],
-                [6, 4],
-                [7, 4],
-            ];
-            this.NINE = [
-                [4, 7],
-                [5, 7],
-                [6, 7],
-                [7, 7],
-            ];
-            this.HOUR_TEN = [
-                [7, 4],
-                [7, 5],
-                [7, 6],
-            ];
-            this.MIN_TEN = [
-                [2, 0],
-                [4, 0],
-                [5, 0],
-            ];
-            this.ELEVEN = [
-                [2, 6],
-                [3, 6],
-                [4, 6],
-                [5, 6],
-                [6, 6],
-                [7, 6],
-            ];
-            this.TWELVE = [
-                [0, 6],
-                [1, 6],
-                [2, 6],
-                [3, 6],
-                [5, 6],
-                [6, 6],
-            ];
-            this.QUARTER = [
-                [1, 1],
-                [2, 1],
-                [3, 1],
-                [4, 1],
-                [5, 1],
-                [6, 1],
-                [7, 1],
-            ];
-            this.TWENTY = [
-                [2, 0],
-                [3, 0],
-                [4, 0],
-                [5, 0],
-                [6, 0],
-                [7, 0],
-            ];
-            this.TWENTY_FIVE = [
-                [2, 0],
-                [3, 0],
-                [4, 0],
-                [5, 0],
-                [6, 0],
-                [7, 0],
-                [4, 2],
-                [5, 2],
-                [6, 2],
-                [7, 2],
-            ];
+            this.ONE.push([1, 7]);
+            this.ONE.push([4, 7]);
+            this.ONE.push([7, 7]);
+
+            this.TWO.push([0, 6]);
+            this.TWO.push([1, 6]);
+            this.TWO.push([1, 7]);
+
+            this.THREE.push([3, 5]);
+            this.THREE.push([4, 5]);
+            this.THREE.push([5, 5]);
+            this.THREE.push([6, 5]);
+            this.THREE.push([7, 5]);
+
+            this.FOUR.push([0, 7]);
+            this.FOUR.push([1, 7]);
+            this.FOUR.push([2, 7]);
+            this.FOUR.push([3, 7]);
+
+            this.HOUR_FIVE.push([0, 4]);
+            this.HOUR_FIVE.push([1, 4]);
+            this.HOUR_FIVE.push([2, 4]);
+            this.HOUR_FIVE.push([3, 4]);
+
+            this.MIN_FIVE.push([4, 2]);
+            this.MIN_FIVE.push([5, 2]);
+            this.MIN_FIVE.push([6, 2]);
+            this.MIN_FIVE.push([7, 2]);
+
+            this.SIX.push([0, 5]);
+            this.SIX.push([1, 5]);
+            this.SIX.push([2, 5]);
+
+            this.SEVEN.push([0, 5]);
+            this.SEVEN.push([4, 6]);
+            this.SEVEN.push([5, 6]);
+            this.SEVEN.push([6, 6]);
+            this.SEVEN.push([7, 6]);
+
+            this.EIGHT.push([3, 4]);
+            this.EIGHT.push([4, 4]);
+            this.EIGHT.push([5, 4]);
+            this.EIGHT.push([6, 4]);
+            this.EIGHT.push([7, 4]);
+
+            this.NINE.push([4, 7]);
+            this.NINE.push([5, 7]);
+            this.NINE.push([6, 7]);
+            this.NINE.push([7, 7]);
+
+            this.HOUR_TEN.push([7, 4]);
+            this.HOUR_TEN.push([7, 5]);
+            this.HOUR_TEN.push([7, 6]);
+
+            this.MIN_TEN.push([2, 0]);
+            this.MIN_TEN.push([4, 0]);
+            this.MIN_TEN.push([5, 0]);
+
+            this.ELEVEN.push([2, 6]);
+            this.ELEVEN.push([3, 6]);
+            this.ELEVEN.push([4, 6]);
+            this.ELEVEN.push([5, 6]);
+            this.ELEVEN.push([6, 6]);
+            this.ELEVEN.push([7, 6]);
+
+            this.TWELVE.push([0, 6]);
+            this.TWELVE.push([1, 6]);
+            this.TWELVE.push([2, 6]);
+            this.TWELVE.push([3, 6]);
+            this.TWELVE.push([5, 6]);
+            this.TWELVE.push([6, 6]);
+
+            this.QUARTER.push([1, 1]);
+            this.QUARTER.push([2, 1]);
+            this.QUARTER.push([3, 1]);
+            this.QUARTER.push([4, 1]);
+            this.QUARTER.push([5, 1]);
+            this.QUARTER.push([6, 1]);
+            this.QUARTER.push([7, 1]);
+
+            this.TWENTY.push([2, 0]);
+            this.TWENTY.push([3, 0]);
+            this.TWENTY.push([4, 0]);
+            this.TWENTY.push([5, 0]);
+            this.TWENTY.push([6, 0]);
+            this.TWENTY.push([7, 0]);
+
+            this.TWENTY_FIVE.push([2, 0]);
+            this.TWENTY_FIVE.push([3, 0]);
+            this.TWENTY_FIVE.push([4, 0]);
+            this.TWENTY_FIVE.push([5, 0]);
+            this.TWENTY_FIVE.push([6, 0]);
+            this.TWENTY_FIVE.push([7, 0]);
+            this.TWENTY_FIVE.push([4, 2]);
+            this.TWENTY_FIVE.push([5, 2]);
+            this.TWENTY_FIVE.push([6, 2]);
+            this.TWENTY_FIVE.push([7, 2]);
 
             if (version === 1) {
-                this.HALF = [
-                    [0, 2],
-                    [1, 2],
-                    [2, 2],
-                    [3, 2],
-                ];
-                this.PAST = [
-                    [1, 3],
-                    [2, 3],
-                    [3, 3],
-                    [4, 3],
-                ];
-                this.TO = [
-                    [6, 3],
-                    [7, 3],
-                ];
-                this.ZHAW = [
-                    [0, 0],
-                    [0, 1],
-                    [1, 2],
-                    [0, 3],
-                ];
+                this.HALF.push([0, 2]);
+                this.HALF.push([1, 2]);
+                this.HALF.push([2, 2]);
+                this.HALF.push([3, 2]);
+
+                this.PAST.push([1, 3]);
+                this.PAST.push([2, 3]);
+                this.PAST.push([3, 3]);
+                this.PAST.push([4, 3]);
+
+                this.TO.push([6, 3]);
+                this.TO.push([7, 3]);
+
+                this.ZHAW.push([0, 0]);
+                this.ZHAW.push([0, 1]);
+                this.ZHAW.push([1, 2]);
+                this.ZHAW.push([0, 3]);
             } else if (version === 2) {
-                this.HALF = [
-                    [1, 2],
-                    [2, 2],
-                    [3, 2],
-                    [4, 2],
-                ];
-                this.PAST = [
-                    [2, 3],
-                    [3, 3],
-                    [4, 3],
-                    [5, 3],
-                ];
-                this.TO = [
-                    [5, 3],
-                    [6, 3],
-                ];
-                this.ZHAW = [
-                    [0, 0],
-                    [0, 1],
-                    [0, 2],
-                    [0, 3],
-                ];
+                this.HALF.push([1, 2]);
+                this.HALF.push([2, 2]);
+                this.HALF.push([3, 2]);
+                this.HALF.push([4, 2]);
+
+                this.PAST.push([2, 3]);
+                this.PAST.push([3, 3]);
+                this.PAST.push([4, 3]);
+                this.PAST.push([5, 3]);
+
+                this.TO.push([5, 3]);
+                this.TO.push([6, 3]);
+
+                this.ZHAW.push([0, 0]);
+                this.ZHAW.push([0, 1]);
+                this.ZHAW.push([0, 2]);
+                this.ZHAW.push([0, 3]);
             }
 
             // Lookup dictionary for wordclock hours
@@ -834,11 +806,17 @@ namespace NeoPixelMatrix {
             //     [7, 7],
             // ];
 
-            let ONE_TEST = [ // works WTF
-                [1, 7],
-                [4, 7],
-                [7, 7],
-            ];
+            // let ONE_TEST = [ // works WTF
+            //     [1, 7],
+            //     [4, 7],
+            //     [7, 7],
+            // ];
+
+            // let ONE_TEST: Array<[number, number]> = []; // no work
+            let ONE_TEST: number[][] = [] // works
+            ONE_TEST.push([1, 7]);
+            ONE_TEST.push([4, 7]);
+            ONE_TEST.push([7, 7]);
 
             if (Array.isArray(ONE_TEST)) {
                 serialDebugMsg("WordClock: ONE_TEST is an array");
@@ -906,15 +884,18 @@ namespace NeoPixelMatrix {
 
             serialDebugMsg("WordClock: _clocktable.TWELVE type: " + typeof this._clocktable.TWELVE);
             basic.pause(10);
-            if (!this._clocktable.TWELVE[0]) { // code crashes here
-                serialDebugMsg("WordClock: Error - this._clocktable.TWELVE[0] not a valid array of tuples");
-            } else {
-                serialDebugMsg("WordClock: this._clocktable.TWELVE[0] is a valid");
-            }
-            basic.pause(10);
-            serialDebugMsg("WordClock: _clocktable.TWELVE[0] type: " + typeof this._clocktable.TWELVE[0]); // code crashes here
-            basic.pause(10);
-            serialDebugMsg("WordClock: _clocktable.TWELVE[0][0] type: " + typeof this._clocktable.TWELVE[0][0]); // code crashes here
+            // if (!this._clocktable.TWELVE[0]) { // code crashes here
+            //     serialDebugMsg("WordClock: Error - this._clocktable.TWELVE[0] not a valid array of tuples");
+            // } else {
+            //     serialDebugMsg("WordClock: this._clocktable.TWELVE[0] is a valid");
+            // }
+            // basic.pause(10);
+            // serialDebugMsg("WordClock: _clocktable.TWELVE[0] type: " + typeof this._clocktable.TWELVE[0]); // code crashes here
+            // basic.pause(10);
+            // serialDebugMsg("WordClock: _clocktable.TWELVE[0][0] type: " + typeof this._clocktable.TWELVE[0][0]); // code crashes here
+            // basic.pause(10);
+
+            serialDebugMsg("WordClock: 3.1.2.1");
             basic.pause(10);
 
             // Check if this._clocktable.TWELVE is defined and not null
