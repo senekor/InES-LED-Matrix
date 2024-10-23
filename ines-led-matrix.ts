@@ -818,14 +818,53 @@ namespace NeoPixelMatrix {
 
             serialDebugMsg("WordClock: 3, hours = " + hours + ", minutes = " + minutes);
 
+            // let ONE_TEST: [number, number][] // no work
+            // let ONE_TEST: Array<[number, number]>; // no work
+            //let ONE_TEST: any // no work
+            // let ONE_TEST: [[number, number], [number, number], [number, number]]; // no work
+            // ONE_TEST = [
+            //     [1, 7],
+            //     [4, 7],
+            //     [7, 7],
+            // ];
 
-            // let ONE_TEST: Array<[number, number]>;
-            //let ONE_TEST: any
-            let ONE_TEST = [
+            // let ONE_TEST: Array<[number, number]> = [ // no work
+            //     [1, 7],
+            //     [4, 7],
+            //     [7, 7],
+            // ];
+
+            let ONE_TEST = [ // works WTF
                 [1, 7],
                 [4, 7],
                 [7, 7],
             ];
+
+            if (Array.isArray(ONE_TEST)) {
+                serialDebugMsg("WordClock: ONE_TEST is an array");
+                basic.pause(10);
+                // Check the length of the array
+                if (ONE_TEST.length > 0) {
+                    serialDebugMsg("WordClock: ONE_TESTE length: " + ONE_TEST.length);
+                    basic.pause(10);
+                    // Access the first element safely
+                    if (Array.isArray(ONE_TEST[0])) {
+                        serialDebugMsg("WordClock: First element of ONE_TEST is an array with length " + ONE_TEST[0].length);
+                        basic.pause(10);
+                        if (ONE_TEST[0].length === 2) {
+                            serialDebugMsg("x1 = " + ONE_TEST[0][0] + ", y1 = " + ONE_TEST[0][1]);
+                        } else {
+                            serialDebugMsg("WordClock: Error - First element of ONE_TEST is not a valid tuple");
+                        }
+                    } else {
+                        serialDebugMsg("WordClock: Error - First element of ONE_TEST is not an array");
+                    }
+                } else {
+                    serialDebugMsg("WordClock: Error - ONE_TEST is an empty array");
+                }
+            } else {
+                serialDebugMsg("WordClock: Error - ONE_TEST is not an array");
+            }
 
             serialDebugMsg("WordClock: ONE_TEST = " + JSON.stringify(ONE_TEST));
             serialDebugMsg("WordClock: ONE_TEST[0] = " + JSON.stringify(ONE_TEST[0]));
